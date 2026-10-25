@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVault | Next-Gen Document Ecosystem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased selection:bg-blue-500 selection:text-white">
+
+<!-- ===================== AUTH SCREEN ===================== -->
+<div id="authScreen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center z-50 transition-opacity duration-500">
+    <div class="bg-white/90 border border-white rounded-[2.5rem] w-full max-w-md p-10 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.3)] mx-4 backdrop-blur-md">
+        <div class="flex flex-col items-center text-center mb-8">
+            <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-4 rounded-2xl mb-4 shadow-lg shadow-blue-500/30 ring-4 ring-blue-50">
+                <i data-lucide="shield-check" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight" id="authTitle">Create Your Secure Wallet</h2>
+            <p class="text-sm text-slate-500 mt-2 font-medium" id="authSubtitle">Set up an account to securely store encrypted documents</p>
+        </div>
+
+        <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-5">
+            <div id="nameFieldGroup">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                <input type="text" id="authName" placeholder="John Doe" class="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-medium transition-all focus:ring-4 focus:ring-blue-500/10 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                <input type="email" id="authEmail" placeholder="john@example.com" class="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-medium transition-all focus:ring-4 focus:ring-blue-500/10 outline-none" required>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
+                <input type="password" id="authPassword" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-medium transition-all focus:ring-4 focus:ring-blue-500/10 outline-none" required>
+            </div>
+            <button type="submit" id="authSubmitBtn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-blue-600/20 mt-4 tracking-wide">
+                Create Account
+            </button>
+        </form>
+
+        <div class="text-center mt-8 pt-6 border-t border-slate-100">
+            <p class="text-sm text-slate-500 font-medium" id="authToggleText">
+                Already have a secure vault?
+                <button onclick="toggleAuthMode(true)" class="text-blue-600 hover:text-blue-700 font-bold ml-1 hover:underline">Log In</button>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== LOGIN 2FA OTP SCREEN ===================== -->
+<div id="loginOtpScreen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-500">
+    <div class="bg-white rounded-[2.5rem] w-full max-w-sm p-10 shadow-2xl mx-4 text-center space-y-6">
+        <div class="bg-blue-50 text-blue-600 p-4 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto border border-blue-100 shadow-inner">
+            <i data-lucide="shield-alert" class="w-7 h-7"></i>
+        </div>
+        <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">Two-Factor Verification</h2>
+            <p class="text-sm text-slate-500 mt-2">Enter the 6-digit OTP to complete login.</p>
+            <!-- Demo hint shown only in development -->
+            <p id="demoOtpHint" class="mt-2 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-3 py-1.5 inline-block"></p>
+        </div>
+        <form onsubmit="handleLoginOtpSubmit(event)" class="space-y-4">
+            <input type="text" id="loginOtpInput" placeholder="••••••" maxlength="6"
+                class="otp-input w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
+                required autocomplete="one-time-code">
+            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl text-sm transition-all shadow-lg shadow-blue-600/20">
+                Verify & Enter Vault
+            </button>
+        </form>
+        <button onclick="handleLogOut()" class="text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors">
+            ← Back to Login
+        </button>
+    </div>
+</div>
+
+<!-- ===================== MAIN APP LAYOUT ===================== -->
+<div class="flex h-screen overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-72 bg-white border-r border-slate-200/80 flex flex-col justify-between hidden md:flex z-20">
+        <div class="p-6 flex flex-col h-full overflow-y-auto">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 px-2 mb-8">
+                <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-blue-500/20">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-800 bg-clip-text text-transparent">SecureVault</span>
+                <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-wider">v3.0</span>
+            </div>
+
+            <!-- Nav -->
+            <nav class="space-y-1.5 mb-6" id="sidebarNav">
+                <button onclick="switchTab('dashboard')" class="w-full flex items-center gap-3.5 px-4 py-3.5 bg-blue-50 text-blue-600 rounded-2xl font-semibold transition-all group nav-link text-sm" data-tab="dashboard">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+                </button>
+                <button onclick="switchTab('issued')" class="w-full flex items-center gap-3.5 px-4 py-3.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-2xl font-semibold transition-all group nav-link text-sm" data-tab="issued">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> Issued Wallet
+                </button>
+                <button onclick="switchTab('uploaded')" class="w-full flex items-center gap-3.5 px-4 py-3.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-2xl font-semibold transition-all group nav-link text-sm" data-tab="uploaded">
+                    <i data-lucide="folder" class="w-4 h-4"></i> Cloud Drive
+                </button>
+                <button onclick="switchTab('profile')" class="w-full flex items-center gap-3.5 px-4 py-3.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-2xl font-semibold transition-all group nav-link text-sm" data-tab="profile">
+                    <i data-lucide="user-check" class="w-4 h-4"></i> Profile & KYC
+                </button>
+            </nav>
+
+            <!-- Folder Panel -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Folders</span>
+                    <button onclick="createFolder()" class="text-blue-600 hover:text-blue-700 p-1 rounded-lg hover:bg-blue-50 transition-colors" title="New Folder">
+                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div id="folderList" class="space-y-0.5"></div>
+            </div>
+        </div>
+
+        <!-- User Card -->
+        <div class="p-4 m-4 bg-slate-50 border border-slate-100 rounded-3xl space-y-3">
+            <div class="flex items-center gap-3">
+                <div id="profileAvatar" class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-sm shadow-md">JD</div>
+                <div class="truncate">
+                    <p class="text-sm font-bold text-slate-800 truncate" id="sidebarUserName">John Doe</p>
+                    <p class="text-[11px] font-semibold flex items-center gap-1.5 mt-0.5">
+                        <span class="w-2 h-2 bg-amber-500 rounded-full inline-block ring-2 ring-amber-100 animate-pulse" id="sidebarKycDot"></span>
+                        <span id="sidebarKycText" class="text-amber-600">Tier 1 Identity</span>
+                    </p>
+                </div>
+            </div>
+            <button onclick="handleLogOut()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-rose-600 bg-white border border-rose-100 hover:bg-rose-50 rounded-xl transition-all shadow-sm">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Securely Log Out
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto relative z-10">
+
+        <!-- Header -->
+        <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/60 h-20 flex items-center justify-between px-8 md:px-12 sticky top-0 z-30">
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight" id="headerTitle">Welcome back</h1>
+            <button onclick="toggleUploadModal(true)" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl text-sm font-semibold transition-all shadow-md flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4 text-blue-400"></i> Add Document
+            </button>
+        </header>
+
+        <div class="p-8 md:p-10 max-w-7xl w-full mx-auto space-y-8">
+
+            <!-- DOCUMENT VIEW WRAPPER -->
+            <div id="documentViewWrapper" class="space-y-8">
+
+                <!-- Stats Cards -->
+                <div id="statsSection" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
+                        <div class="p-4 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl">
+                            <i data-lucide="badge-check" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Active Wallet Documents</p>
+                            <h3 class="text-2xl font-black text-slate-800 mt-0.5" id="issuedCount">0 Documents</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
+                        <div class="p-4 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-2xl">
+                            <i data-lucide="database" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Secured Storage</p>
+                            <h3 class="text-2xl font-black text-slate-800 mt-0.5" id="storageText">0.00 MB / 5 MB</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Upload Chart -->
+                <div id="chartSection" class="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Monthly Uploads</h3>
+                        <span class="text-xs text-slate-400 font-medium">Last 12 months</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="uploadChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Document Grid -->
+                <div>
+                    <div class="flex items-center justify-between mb-5">
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight" id="sectionTitle">Your Digital Wallet</h2>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="documentGrid"></div>
+                </div>
+            </div>
+
+            <!-- PROFILE PANEL -->
+            <div id="profilePanel" class="hidden bg-white border border-slate-200/60 rounded-[2rem] p-8 md:p-10 max-w-2xl shadow-sm space-y-8">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">User Profile & Verification</h2>
+                    <p class="text-sm font-medium text-slate-400 mt-1">Manage your identity and KYC credentials.</p>
+                </div>
+
+                <div id="kycStatusBanner" class="flex items-center gap-4 p-5 bg-amber-50/60 border border-amber-100 rounded-2xl">
+                    <div id="kycBannerIconContainer" class="bg-amber-500 text-white p-3 rounded-xl shadow-md">
+                        <i id="kycBannerIcon" data-lucide="alert-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-amber-900" id="kycStatusTitle">Identity Tier 1 Unverified</p>
+                        <p class="text-sm font-medium text-amber-700/90 mt-0.5" id="kycStatusDescription">Link your mobile number to unlock full storage.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 p-2 bg-slate-50 rounded-2xl border border-slate-100 text-sm">
+                    <div class="p-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Full Name</p>
+                        <p class="font-bold text-slate-800 mt-2 text-base" id="profileFullName">—</p>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Linked Mobile</p>
+                        <p class="font-bold text-slate-800 mt-2 text-base" id="profileMobileDisplay">Not Linked</p>
+                    </div>
+                </div>
+
+                <div id="mobileKycVerificationBlock" class="p-6 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-4">
+                    <div class="flex items-center gap-2 text-blue-600">
+                        <i data-lucide="smartphone" class="w-4 h-4"></i>
+                        <h3 class="font-bold text-slate-900 text-xs uppercase tracking-widest">Mobile KYC Verification</h3>
+                    </div>
+                    <form id="mobileKycForm" onsubmit="sendKycOtp(event)" class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <span class="absolute left-5 top-4 text-sm font-bold text-slate-400">+91</span>
+                            <input type="tel" id="kycPhoneInput" maxlength="10" pattern="[0-9]{10}" placeholder="10 digit number"
+                                class="w-full bg-white border border-slate-200 focus:border-blue-500 rounded-xl pl-16 pr-5 py-3.5 text-sm font-semibold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all" required>
+                        </div>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3.5 rounded-xl transition-all shadow-md">
+                            Send OTP
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- ===================== UPLOAD MODAL ===================== -->
+<div id="uploadModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-[2.2rem] w-full max-w-md p-8 shadow-2xl transform scale-95 transition-transform duration-300 mx-4 border border-slate-100">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-extrabold text-slate-900">Upload Documents</h3>
+            <button onclick="toggleUploadModal(false)" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form id="uploadForm" onsubmit="handleUpload(event)" class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Document Type</label>
+                <select id="docType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-blue-500 outline-none cursor-pointer" required>
+                    <option value="Govt ID">Government ID</option>
+                    <option value="Education">Education Certificate</option>
+                    <option value="Transport">Vehicle / Driving Document</option>
+                    <option value="Document">General Document</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Save to Folder</label>
+                <select id="uploadFolderSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold focus:outline-none focus:border-blue-500 outline-none cursor-pointer">
+                    <option value="">— No Folder (Root) —</option>
+                </select>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Files <span class="normal-case text-slate-300">(multiple supported)</span></label>
+                <div id="dropZone" class="drop-zone group" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept="image/*,application/pdf,.doc,.docx" multiple onchange="updateFileName(this)">
+                    <div class="flex flex-col items-center pointer-events-none">
+                        <div class="p-3 bg-blue-50 text-blue-500 rounded-xl mb-3 border border-blue-100 shadow-sm group-hover:scale-110 transition-transform">
+                            <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                        </div>
+                        <span id="fileName" class="text-sm font-bold text-slate-600">Drop files here or click to browse</span>
+                        <span class="text-xs text-slate-400 mt-1 font-medium">PDF, Images, DOC — up to 5MB each</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-4 rounded-xl text-sm transition-all shadow-lg shadow-slate-900/10 tracking-wide flex items-center justify-center gap-2">
+                <i data-lucide="lock" class="w-4 h-4 text-blue-400"></i> Encrypt & Save
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== DOCUMENT PREVIEW MODAL ===================== -->
+<div id="viewerModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-[2.5rem] w-full max-w-4xl h-[85vh] p-8 shadow-2xl flex flex-col transform scale-95 transition-transform duration-300 mx-4 border border-slate-100">
+        <div class="flex items-center justify-between pb-5 border-b border-slate-100">
+            <div>
+                <h3 id="viewerTitle" class="text-xl font-extrabold text-slate-900 tracking-tight">Document Viewer</h3>
+                <p class="text-xs text-emerald-600 font-bold flex items-center gap-1.5 mt-1">
+                    <i data-lucide="lock" class="w-3 h-3"></i> AES-256 Decrypted Session View
+                </p>
+            </div>
+            <button onclick="closeViewerModal()" class="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="flex-1 bg-slate-900 shadow-inner rounded-3xl mt-5 overflow-hidden flex items-center justify-center p-3 border border-slate-950">
+            <div id="viewerContent" class="w-full h-full flex items-center justify-center"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== KYC OTP MODAL ===================== -->
+<div id="otpModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-[2rem] w-full max-w-xs p-8 shadow-2xl transform scale-95 transition-transform duration-300 text-center space-y-5 border border-slate-100">
+        <div class="bg-blue-50 text-blue-600 p-3.5 rounded-full w-14 h-14 flex items-center justify-center mx-auto border border-blue-100">
+            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+        </div>
+        <div>
+            <h3 class="text-lg font-extrabold text-slate-900">KYC OTP Verification</h3>
+            <p class="text-xs text-slate-400 font-medium mt-1.5">
+                Enter the code sent to your mobile.<br>
+                <span class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md mt-1 inline-block">Demo Code: 1234</span>
+            </p>
+        </div>
+        <form onsubmit="verifyKycOtp(event)" class="space-y-4">
+            <input type="text" id="otpInput" placeholder="••••" maxlength="4"
+                class="otp-input w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3.5 outline-none transition-all focus:ring-4 focus:ring-blue-500/10" required>
+            <div class="flex gap-2.5">
+                <button type="button" onclick="toggleOtpModal(false)" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold py-3.5 rounded-xl transition-colors">Cancel</button>
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md">Verify OTP</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
